@@ -100,14 +100,34 @@ function parseSkillOutput(input: CheckInput, raw: string): CheckOutput {
 }
 
 function inferLevel(raw: string): "ok" | "caution" | "warning" {
+  const explicit = extractExplicitLevel(raw);
+  if (explicit) return explicit;
+
   const lower = raw.toLowerCase();
-  if (lower.includes("warning") || lower.includes("위험") || lower.includes("주의") && lower.includes("높음")) {
+  if (
+    lower.includes("warning") ||
+    lower.includes("위험") ||
+    (/주의/.test(lower) && /높음|심각|위험|즉시/.test(lower))
+  ) {
     return "warning";
   }
   if (lower.includes("caution") || lower.includes("주의")) {
     return "caution";
   }
   return "ok";
+}
+
+function extractExplicitLevel(raw: string): "ok" | "caution" | "warning" | null {
+  const lines = raw.split("\n");
+  for (const line of lines) {
+    const normalized = line.trim();
+
+    if (/^수준\s*[:：]\s*ok\b/i.test(normalized)) return "ok";
+    if (/^수준\s*[:：]\s*caution\b/i.test(normalized)) return "caution";
+    if (/^수준\s*[:：]\s*warning\b/i.test(normalized)) return "warning";
+  }
+
+  return null;
 }
 
 function extractItems(raw: string): CheckOutput["items"] {
