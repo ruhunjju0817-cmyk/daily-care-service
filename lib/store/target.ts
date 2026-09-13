@@ -1,4 +1,4 @@
-import { TargetDoc, Medication, Meal, Exercise, Condition } from "@/lib/types/target";
+import { TargetDoc, Medication, Meal, Exercise, Condition, Alert } from "@/lib/types/target";
 
 let store: Record<string, TargetDoc> = {};
 
@@ -56,5 +56,12 @@ export function addCondition(targetId: string, item: Condition): TargetDoc | nul
   const target = getTarget(targetId);
   if (!target) return null;
   target.conditions = [...target.conditions, item];
+  return target;
+}
+
+export function addAlert(targetId: string, item: Alert): TargetDoc | null {
+  const target = getTarget(targetId);
+  if (!target) return null;
+  target.alerts = [...target.alerts, item];
   return target;
 }
