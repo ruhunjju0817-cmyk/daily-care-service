@@ -146,9 +146,19 @@ export default function Home() {
   const addMed = async () => {
     const name = window.prompt("약 이름") ?? "";
     const time = window.prompt("시간(예: 08:00)") ?? "";
-    const ba = window.prompt("공복/식후/none 중 선택 (그대로 입력, 예: before, after, none)") ?? "none";
+
+    const ba = window.prompt(
+      "공복/식후 선택\n1. 식전(공복)\n2. 식후\n3. 상관없음\n번호로 입력"
+    ) ?? "3";
+
+    const beforeAfterMap: Record<string, Medication["beforeAfter"]> = {
+      "1": "before",
+      "2": "after",
+      "3": "none",
+    };
+    const beforeAfter = beforeAfterMap[ba] ?? "none";
+
     if (!name || !time) return;
-    const beforeAfter = ["before", "after", "none"].includes(ba) ? ba : "none";
     const res = await fetch(`/api/targets/${currentTarget!.id}/medications`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -160,9 +170,21 @@ export default function Home() {
 
   const addMeal = async () => {
     const time = window.prompt("식사 시간") ?? "";
-    const type = window.prompt("끼니 구분 입력 (예: breakfast, lunch, dinner, snack)") ?? "breakfast";
+
+    const type = window.prompt(
+      "끼니 구분 선택\n1. 아침\n2. 점심\n3. 저녁\n4. 간식\n번호로 입력"
+    ) ?? "1";
+
+    const mealTypeMap: Record<string, Meal["mealType"]> = {
+      "1": "breakfast",
+      "2": "lunch",
+      "3": "dinner",
+      "4": "snack",
+    };
+    const mealType = mealTypeMap[type] ?? "breakfast";
+
     const status = window.prompt(
-      "식사 상태 선택\n1. 다 드셨어요 (eaten)\n2. 남기셨어요 (skipped)\n3. 못 드셨어요 (partial)\n4. 모름 (unknown)\n번호로 입력 또는 단어 직접 입력"
+      "식사 상태 선택\n1. 다 드셨어요 (eaten)\n2. 남기셨어요 (skipped)\n3. 못 드셨어요 (partial)\n4. 모름 (unknown)\n번호로 입력"
     ) ?? "unknown";
 
     const mealStatusMap: Record<string, Meal["status"]> = {
@@ -177,23 +199,11 @@ export default function Home() {
     };
     const finalStatus = mealStatusMap[status] ?? "unknown";
 
-    const mealTypeMap: Record<string, Meal["mealType"]> = {
-      "1": "breakfast",
-      "2": "lunch",
-      "3": "dinner",
-      "4": "snack",
-      breakfast: "breakfast",
-      lunch: "lunch",
-      dinner: "dinner",
-      snack: "snack",
-    };
-    const finalType = mealTypeMap[type] ?? "breakfast";
-
     if (!time) return;
     const res = await fetch(`/api/targets/${currentTarget!.id}/meals`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ time, mealType: finalType, status: finalStatus }),
+      body: JSON.stringify({ time, mealType, status: finalStatus }),
     });
     const data = await res.json();
     setMeals(data?.meals ?? []);
