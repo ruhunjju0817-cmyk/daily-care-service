@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addMedication } from "@/lib/store/target";
+import { getTarget, addMedication } from "@/lib/store/target";
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ targetId: string }> }
+) {
+  const { targetId } = await params;
+  const target = getTarget(targetId);
+  if (!target) return NextResponse.json({ error: "대상자를 찾을 수 없습니다." }, { status: 404 });
+  return NextResponse.json({ medications: target.medications }, { status: 200 });
+}
 
 export async function POST(
   request: NextRequest,
