@@ -125,3 +125,16 @@ function extractItems(raw: string): CheckOutput["items"] {
         message: rest.replace(actionMatch?.[0] ?? "", "").trim(),
         action: actionMatch ? actionMatch[1].trim() : null,
       });
+    }
+  }
+
+  if (items.length === 0) {
+    items.push({
+      category: "condition",
+      message: raw || "현재 상태를 확인했습니다.",
+      action: "필요 시 복약/식사/운동/컨디션을 다시 확인해 주세요.",
+    });
+  }
+
+  return items;
+}
