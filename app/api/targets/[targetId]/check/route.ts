@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTarget } from "@/lib/store/target";
+import { getTarget, addAlert } from "@/lib/store/target";
 import { buildCheckInput } from "@/lib/store/buildCheckInput";
 import { callDailyCareManager } from "@/lib/skill/call";
 import { CheckOutput } from "@/lib/types/check";
@@ -18,13 +18,24 @@ export async function POST(
     const input = buildCheckInput(target);
     const output = await callDailyCareManager(input);
 
+    if (output.level === "warning" || output.level === "caution") {
+      addAlert(targetId, {
+        alertId: crypto.randomUUID?.() ?? String(Date.now()),
+        type: "check",
+        title: "상태 확인 알림",
+        message: output.summary ?? "현재 상태에 주의가 필요합니다.",
+        at: output.checkedAt,
+        status: "sent",
+      });
+    }
+
     return NextResponse.json(output, { status: 200 });
   } catch (error) {
     console.error(error);
     const fallback: CheckOutput = {
       targetId: "",
       checkedAt: new Date().toISOString(),
-      summary: "현재 판단을 확인하지 못했습니다. 입력 상태를 다시 확인하거나 잠시 후 다시 시도해 주세요.",
+      summary: "현재 판단을 확인하지 못했습니다.",
       level: "caution",
       items: [
         {
