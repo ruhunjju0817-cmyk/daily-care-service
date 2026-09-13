@@ -146,8 +146,9 @@ export default function Home() {
   const addMed = async () => {
     const name = window.prompt("약 이름") ?? "";
     const time = window.prompt("시간(예: 08:00)") ?? "";
-    const beforeAfter = window.prompt("공복/식후/none") ?? "none";
+    const ba = window.prompt("공복/식후/none 중 선택 (그대로 입력, 예: before, after, none)") ?? "none";
     if (!name || !time) return;
+    const beforeAfter = ["before", "after", "none"].includes(ba) ? ba : "none";
     const res = await fetch(`/api/targets/${currentTarget!.id}/medications`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -159,13 +160,40 @@ export default function Home() {
 
   const addMeal = async () => {
     const time = window.prompt("식사 시간") ?? "";
-    const type = window.prompt("끼니 구분(breakfast/lunch/dinner/snack)") ?? "breakfast";
-    const status = window.prompt("상태(eaten/skipped/partial/unknown)") ?? "unknown";
+    const type = window.prompt("끼니 구분 입력 (예: breakfast, lunch, dinner, snack)") ?? "breakfast";
+    const status = window.prompt(
+      "식사 상태 선택\n1. 다 드셨어요 (eaten)\n2. 남기셨어요 (skipped)\n3. 못 드셨어요 (partial)\n4. 모름 (unknown)\n번호로 입력 또는 단어 직접 입력"
+    ) ?? "unknown";
+
+    const mealStatusMap: Record<string, Meal["status"]> = {
+      "1": "eaten",
+      "2": "skipped",
+      "3": "partial",
+      "4": "unknown",
+      eaten: "eaten",
+      skipped: "skipped",
+      partial: "partial",
+      unknown: "unknown",
+    };
+    const finalStatus = mealStatusMap[status] ?? "unknown";
+
+    const mealTypeMap: Record<string, Meal["mealType"]> = {
+      "1": "breakfast",
+      "2": "lunch",
+      "3": "dinner",
+      "4": "snack",
+      breakfast: "breakfast",
+      lunch: "lunch",
+      dinner: "dinner",
+      snack: "snack",
+    };
+    const finalType = mealTypeMap[type] ?? "breakfast";
+
     if (!time) return;
     const res = await fetch(`/api/targets/${currentTarget!.id}/meals`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ time, mealType: type, status }),
+      body: JSON.stringify({ time, mealType: finalType, status: finalStatus }),
     });
     const data = await res.json();
     setMeals(data?.meals ?? []);
@@ -174,13 +202,43 @@ export default function Home() {
   const addExercise = async () => {
     const time = window.prompt("운동 시간") ?? "";
     const type = window.prompt("운동 종류") ?? "";
-    const intensity = window.prompt("강도(low/moderate/high/unknown)") ?? "unknown";
-    const status = window.prompt("상태(scheduled/done/cancelled/changed)") ?? "scheduled";
+    const intensity = window.prompt(
+      "운동 강도 선택\n1. 약함 (low)\n2. 보통 (moderate)\n3. 심함 (high)\n4. 모름 (unknown)\n번호로 입력 또는 단어 직접 입력"
+    ) ?? "unknown";
+
+    const intensityMap: Record<string, Exercise["intensity"]> = {
+      "1": "low",
+      "2": "moderate",
+      "3": "high",
+      "4": "unknown",
+      low: "low",
+      moderate: "moderate",
+      high: "high",
+      unknown: "unknown",
+    };
+    const finalIntensity = intensityMap[intensity] ?? "unknown";
+
+    const status = window.prompt(
+      "운동 상태 선택\n1. 예정 (scheduled)\n2. 함 (done)\n3. 취소 (cancelled)\n4. 변경 (changed)\n번호로 입력 또는 단어 직접 입력"
+    ) ?? "scheduled";
+
+    const statusMap: Record<string, Exercise["status"]> = {
+      "1": "scheduled",
+      "2": "done",
+      "3": "cancelled",
+      "4": "changed",
+      scheduled: "scheduled",
+      done: "done",
+      cancelled: "cancelled",
+      changed: "changed",
+    };
+    const finalStatus = statusMap[status] ?? "scheduled";
+
     if (!time) return;
     const res = await fetch(`/api/targets/${currentTarget!.id}/exercises`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ time, type, intensity, status }),
+      body: JSON.stringify({ time, type, intensity: finalIntensity, status: finalStatus }),
     });
     const data = await res.json();
     setExercises(data?.exercises ?? []);
@@ -407,6 +465,8 @@ export default function Home() {
                     {e.type}
                     {" / "}
                     {e.intensity}
+                    {" / "}
+                    {e.status}
                   </li>
                 ))}
                 {exercises.length === 0 && (
