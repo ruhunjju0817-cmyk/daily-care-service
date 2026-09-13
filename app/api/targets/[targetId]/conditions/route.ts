@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addCondition } from "@/lib/store/target";
+import { getTarget, addCondition } from "@/lib/store/target";
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ targetId: string }> }
+) {
+  const { targetId } = await params;
+  const target = getTarget(targetId);
+  if (!target) return NextResponse.json({ error: "대상자를 찾을 수 없습니다." }, { status: 404 });
+  return NextResponse.json({ conditions: target.conditions }, { status: 200 });
+}
 
 export async function POST(
   request: NextRequest,
