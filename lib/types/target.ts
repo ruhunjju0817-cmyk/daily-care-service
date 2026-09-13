@@ -21,6 +21,8 @@ export type Caregiver = {
 export type Alert = {
   alertId: string;
   type: "medication" | "meal" | "exercise" | "check";
+  title: string;
+  message: string;
   at: string;
   status: "scheduled" | "sent" | "dismissed";
 };
