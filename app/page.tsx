@@ -470,8 +470,16 @@ export default function Home() {
                 >
                   {checkResult.level.toUpperCase()}
                 </span>
-                <p style={{ margin: 0, fontSize: 15, color: "#2a3344" }}>{checkResult.summary}</p>
               </div>
+
+              <div style={{ fontSize: 14, color: "#3a4658", lineHeight: 1.6, marginBottom: 8 }}>
+                {checkResult.summary.split(/(?<=[.。!?])/).map((seg, i) => (
+                  <p key={i} style={{ margin: "0 0 8px" }}>
+                    {seg.trim() || seg}
+                  </p>
+                ))}
+              </div>
+
               <ul style={{ padding: 0, margin: 0, listStyle: "disc", paddingLeft: 20 }}>
                 {checkResult.items.map((item, i) => (
                   <li key={i} style={{ marginBottom: 6, fontSize: 14 }}>
