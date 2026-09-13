@@ -2,6 +2,15 @@
 
 import { useEffect, useState } from "react";
 
+type Alert = {
+  alertId: string;
+  type: "medication" | "meal" | "exercise" | "check";
+  title: string;
+  message: string;
+  at: string;
+  status: "scheduled" | "sent" | "dismissed";
+};
+
 type Target = {
   id: string;
   profile?: { name?: string; note?: string };
@@ -62,6 +71,7 @@ export default function Home() {
 
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<CheckOutput | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
   useEffect(() => {
     fetch("/api/targets")
@@ -69,6 +79,14 @@ export default function Home() {
       .then(setTargets)
       .catch(() => setTargets([]));
   }, []);
+
+  useEffect(() => {
+    if (!currentTarget) return;
+    fetch(`/api/targets/${currentTarget.id}/alerts`)
+      .then((res) => res.json())
+      .then((data) => setAlerts(data?.alerts ?? []))
+      .catch(() => setAlerts([]));
+  }, [currentTarget]);
 
   const createTarget = async (name: string) => {
     const res = await fetch("/api/targets", {
@@ -85,6 +103,7 @@ export default function Home() {
   const selectTarget = (t: Target) => {
     setCurrentTarget(t);
     resetInputs();
+    setCheckResult(null);
     fetchInputs(t.id);
   };
 
@@ -318,6 +337,23 @@ export default function Home() {
                   <li key={i}>
                     <strong>{item.category}</strong>: {item.message}
                     {item.action ? ` → ${item.action}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {alerts.length > 0 && (
+            <section style={{ marginTop: 16, border: "1px solid #e5e7eb", padding: 12 }}>
+              <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>알림</h3>
+              <ul style={{ padding: 0, margin: 0, listStyle: "disc", paddingLeft: 18 }}>
+                {alerts.map((a) => (
+                  <li key={a.alertId} style={{ marginBottom: 6 }}>
+                    <strong style={{ fontSize: 13 }}>{a.title}</strong>
+                    <span style={{ color: "#333", fontSize: 13 }}> {a.message}</span>
+                    <div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>
+                      {new Date(a.at).toLocaleString()}
+                    </div>
                   </li>
                 ))}
               </ul>
