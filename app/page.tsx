@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 
 type Alert = {
   alertId: string;
@@ -59,6 +60,11 @@ type CheckOutput = {
   }>;
   raw: string | null;
 };
+
+const SECTION_BG = "#f7f8fc";
+const CARD_BORDER = "#e2e5ee";
+const CARD_SHADOW = "0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.04)";
+const BASE_GAP = 16;
 
 export default function Home() {
   const [targets, setTargets] = useState<Target[]>([]);
@@ -224,13 +230,58 @@ export default function Home() {
     return "#2e7d32";
   };
 
-  return (
-    <div style={{ padding: 24, fontFamily: "sans-serif", maxWidth: 720, margin: "0 auto" }}>
-      <h1>Daily Care Service MVP</h1>
-      <p>대상자 관리, 복약·식사·운동·컨디션 입력, 충돌 확인 MVP입니다.</p>
+  const cardStyle: CSSProperties = {
+    background: SECTION_BG,
+    border: `1px solid ${CARD_BORDER}`,
+    borderRadius: 12,
+    boxShadow: CARD_SHADOW,
+    padding: BASE_GAP,
+  };
 
-      <section style={{ marginTop: 24 }}>
-        <h2>대상자</h2>
+  const addButtonStyle: CSSProperties = {
+    marginTop: 12,
+    padding: "8px 14px",
+    background: "#3b5b8a",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 500,
+  };
+
+  const checkButtonStyle: CSSProperties = {
+    marginTop: 16,
+    padding: "9px 18px",
+    background: "#2f4a73",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    fontSize: 15,
+    fontWeight: 600,
+    cursor: checking ? "not-allowed" : "pointer",
+    opacity: checking ? 0.7 : 1,
+  };
+
+  return (
+    <div
+      style={{
+        padding: 28,
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        maxWidth: 820,
+        margin: "0 auto",
+        color: "#1f2330",
+      }}
+    >
+      <header style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 650, margin: "0 0 8px" }}>Daily Care Service MVP</h1>
+        <p style={{ fontSize: 15, color: "#5b6478", margin: 0 }}>
+          대상자 관리, 복약·식사·운동·컨디션 입력, 충돌 확인 MVP입니다.
+        </p>
+      </header>
+
+      <section style={{ marginTop: 20 }}>
+        <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 12 }}>대상자</h2>
         {!currentTarget && (
           <form
             onSubmit={(e) => {
@@ -238,17 +289,55 @@ export default function Home() {
               const name = (e.currentTarget.elements.namedItem("name") as HTMLInputElement).value;
               if (name) createTarget(name);
             }}
+            style={{ display: "flex", gap: 10, alignItems: "center" }}
           >
-            <input name="name" placeholder="대상자 이름" required />
-            <button type="submit">대상자 생성</button>
+            <input
+              name="name"
+              placeholder="대상자 이름"
+              required
+              style={{
+                padding: "9px 12px",
+                fontSize: 14,
+                border: "1px solid #c7cdd9",
+                borderRadius: 8,
+                outline: "none",
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                padding: "9px 14px",
+                background: "#3b5b8a",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+            >
+              대상자 생성
+            </button>
           </form>
         )}
 
         {targets.length > 0 && (
-          <ul style={{ marginTop: 12 }}>
+          <ul style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 6, padding: 0, listStyle: "none" }}>
             {targets.map((t) => (
               <li key={t.id}>
-                <button onClick={() => selectTarget(t)}>
+                <button
+                  onClick={() => selectTarget(t)}
+                  style={{
+                    padding: "9px 14px",
+                    background: currentTarget?.id === t.id ? "#e7ecf7" : "#fff",
+                    border: `1px solid ${currentTarget?.id === t.id ? "#3b5b8a" : "#c7cdd9"}`,
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: currentTarget?.id === t.id ? 600 : 400,
+                    color: currentTarget?.id === t.id ? "#1f2330" : "#33415a",
+                    cursor: "pointer",
+                  }}
+                >
                   {t.profile?.name ?? t.id}
                 </button>
               </li>
@@ -258,106 +347,162 @@ export default function Home() {
       </section>
 
       {currentTarget && (
-        <section style={{ marginTop: 24, border: "1px solid #e5e7eb", padding: 16 }}>
-          <h2>현재 대상자: {currentTarget.profile?.name ?? currentTarget.id}</h2>
-
-          <div>
-            <h3>복약</h3>
-            <ul>
-              {meds.map((m) => (
-                <li key={m.medicationId ?? m.name}>
-                  {m.name} / {m.time} / {m.beforeAfter}
-                </li>
-              ))}
-            </ul>
-            <button type="button" onClick={addMed}>
-              복약 추가
-            </button>
+        <section style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ fontSize: 17, fontWeight: 600, margin: 0 }}>
+              현재 대상자: {currentTarget.profile?.name ?? currentTarget.id}
+            </h2>
           </div>
 
-          <div>
-            <h3>식사</h3>
-            <ul>
-              {meals.map((m) => (
-                <li key={m.mealId ?? m.time}>
-                  {m.time} / {m.mealType} / {m.status}
-                </li>
-              ))}
-            </ul>
-            <button type="button" onClick={addMeal}>
-              식사 추가
-            </button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={cardStyle}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 10px", color: "#2f3b4f" }}>복약</h3>
+              <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
+                {meds.map((m) => (
+                  <li key={m.medicationId ?? m.name} style={{ padding: "7px 0", borderBottom: "1px solid #e6e9f1", fontSize: 14 }}>
+                    <span style={{ fontWeight: 500 }}>{m.name}</span>
+                    {" / "}
+                    {m.time}
+                    {" / "}
+                    {m.beforeAfter}
+                  </li>
+                ))}
+                {meds.length === 0 && (
+                  <li style={{ color: "#8a93a3", fontSize: 13 }}>등록된 복약이 없습니다.</li>
+                )}
+              </ul>
+              <button type="button" onClick={addMed} style={addButtonStyle}>
+                복약 추가
+              </button>
+            </div>
+
+            <div style={cardStyle}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 10px", color: "#2f3b4f" }}>식사</h3>
+              <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
+                {meals.map((m) => (
+                  <li key={m.mealId ?? m.time} style={{ padding: "7px 0", borderBottom: "1px solid #e6e9f1", fontSize: 14 }}>
+                    {m.time}
+                    {" / "}
+                    {m.mealType}
+                    {" / "}
+                    {m.status}
+                  </li>
+                ))}
+                {meals.length === 0 && (
+                  <li style={{ color: "#8a93a3", fontSize: 13 }}>등록된 식사가 없습니다.</li>
+                )}
+              </ul>
+              <button type="button" onClick={addMeal} style={addButtonStyle}>
+                식사 추가
+              </button>
+            </div>
+
+            <div style={cardStyle}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 10px", color: "#2f3b4f" }}>운동</h3>
+              <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
+                {exercises.map((e) => (
+                  <li key={e.exerciseId ?? e.time} style={{ padding: "7px 0", borderBottom: "1px solid #e6e9f1", fontSize: 14 }}>
+                    {e.time}
+                    {" / "}
+                    {e.type}
+                    {" / "}
+                    {e.intensity}
+                  </li>
+                ))}
+                {exercises.length === 0 && (
+                  <li style={{ color: "#8a93a3", fontSize: 13 }}>등록된 운동이 없습니다.</li>
+                )}
+              </ul>
+              <button type="button" onClick={addExercise} style={addButtonStyle}>
+                운동 추가
+              </button>
+            </div>
+
+            <div style={cardStyle}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 10px", color: "#2f3b4f" }}>컨디션</h3>
+              <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
+                {conditions.map((c) => (
+                  <li key={c.conditionId ?? c.at} style={{ padding: "7px 0", borderBottom: "1px solid #e6e9f1", fontSize: 14 }}>
+                    {c.at}
+                    {" / "}
+                    {c.state}
+                    {" / "}
+                    {c.note ?? "-"}
+                  </li>
+                ))}
+                {conditions.length === 0 && (
+                  <li style={{ color: "#8a93a3", fontSize: 13 }}>등록된 컨디션이 없습니다.</li>
+                )}
+              </ul>
+              <button type="button" onClick={addCondition} style={addButtonStyle}>
+                컨디션 추가
+              </button>
+            </div>
           </div>
 
-          <div>
-            <h3>운동</h3>
-            <ul>
-              {exercises.map((e) => (
-                <li key={e.exerciseId ?? e.time}>
-                  {e.time} / {e.type} / {e.intensity} / {e.status}
-                </li>
-              ))}
-            </ul>
-            <button type="button" onClick={addExercise}>
-              운동 추가
+          <div style={{ marginTop: 4 }}>
+            <button
+              type="button"
+              onClick={runCheck}
+              disabled={checking}
+              style={{
+                ...checkButtonStyle,
+                background: "#33496f",
+              }}
+            >
+              {checking ? "체크 중..." : "충돌/상태 체크하기"}
             </button>
           </div>
-
-          <div>
-            <h3>컨디션</h3>
-            <ul>
-              {conditions.map((c) => (
-                <li key={c.conditionId ?? c.at}>
-                  {c.at} / {c.state} / {c.note ?? "-"}
-                </li>
-              ))}
-            </ul>
-            <button type="button" onClick={addCondition}>
-              컨디션 추가
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={runCheck}
-            disabled={checking}
-            style={{ marginTop: 16, padding: "8px 16px", cursor: checking ? "not-allowed" : "auto" }}
-          >
-            {checking ? "체크 중..." : "충돌/상태 체크하기"}
-          </button>
 
           {checkResult && (
-            <section style={{ marginTop: 16, border: "1px solid #e5e7eb", padding: 16 }}>
-              <h3 style={{ color: levelColor(checkResult.level) }}>
-                {checkResult.level.toUpperCase()}
-              </h3>
-              <p>{checkResult.summary}</p>
-              <ul>
+            <div style={{ background: "#f7f8fc", border: `1px solid ${CARD_BORDER}`, borderRadius: 12, padding: BASE_GAP, boxShadow: CARD_SHADOW }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                <span
+                  style={{
+                    background: levelColor(checkResult.level),
+                    color: "#fff",
+                    padding: "4px 10px",
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {checkResult.level.toUpperCase()}
+                </span>
+                <p style={{ margin: 0, fontSize: 15, color: "#2a3344" }}>{checkResult.summary}</p>
+              </div>
+              <ul style={{ padding: 0, margin: 0, listStyle: "disc", paddingLeft: 20 }}>
                 {checkResult.items.map((item, i) => (
-                  <li key={i}>
-                    <strong>{item.category}</strong>: {item.message}
+                  <li key={i} style={{ marginBottom: 6, fontSize: 14 }}>
+                    <strong style={{ color: "#2f3b4f" }}>{item.category}</strong>
+                    {" "}
+                    {item.message}
                     {item.action ? ` → ${item.action}` : ""}
                   </li>
                 ))}
               </ul>
-            </section>
+            </div>
           )}
 
           {alerts.length > 0 && (
-            <section style={{ marginTop: 16, border: "1px solid #e5e7eb", padding: 12 }}>
-              <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>알림</h3>
+            <div style={{ background: "#f7f8fc", border: `1px solid ${CARD_BORDER}`, borderRadius: 12, padding: BASE_GAP, boxShadow: CARD_SHADOW }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 10px", color: "#2f3b4f" }}>알림</h3>
               <ul style={{ padding: 0, margin: 0, listStyle: "disc", paddingLeft: 18 }}>
                 {alerts.map((a) => (
-                  <li key={a.alertId} style={{ marginBottom: 6 }}>
-                    <strong style={{ fontSize: 13 }}>{a.title}</strong>
-                    <span style={{ color: "#333", fontSize: 13 }}> {a.message}</span>
-                    <div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>
+                  <li
+                    key={a.alertId}
+                    style={{ marginBottom: 8, padding: "8px 10px", background: "#fff", border: "1px solid #e6e9f1", borderRadius: 8, fontSize: 13.5 }}
+                  >
+                    <strong style={{ color: "#2f3b4f" }}>{a.title}</strong>
+                    <span style={{ color: "#3a4658" }}> {a.message}</span>
+                    <div style={{ fontSize: 11, color: "#9aa2b2", marginTop: 4 }}>
                       {new Date(a.at).toLocaleString()}
                     </div>
                   </li>
                 ))}
               </ul>
-            </section>
+            </div>
           )}
         </section>
       )}
