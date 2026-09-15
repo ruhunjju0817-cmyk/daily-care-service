@@ -6,7 +6,7 @@ function medicationReal(m: TargetDoc["medications"][number]) {
 }
 
 function mealReal(m: TargetDoc["meals"][number]) {
-  return !!(m.time || m.mealType !== "unknown");
+  return !!(m.time || m.status !== "unknown");
 }
 
 function exerciseReal(e: TargetDoc["exercises"][number]) {
