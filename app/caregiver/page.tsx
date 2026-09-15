@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
-// ---------- 내부 저장용 타입 (변경 없음) ----------
 type Alert = {
   alertId: string;
   type: "medication" | "meal" | "exercise" | "check";
@@ -120,6 +119,93 @@ const CARD_BORDER = "#e2e5ee";
 const CARD_SHADOW = "0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.04)";
 const BASE_GAP = 16;
 
+// ---------- 순차 fetch 헬퍼 ----------
+async function fetchDataSequentially(selectedId: string) {
+  // 1) 대상자 조회
+  let target: Target | null = null;
+  try {
+    const targetRes = await fetch(`/api/targets/${selectedId}`);
+    const targetData = await targetRes.json();
+    if (targetData && typeof targetData.id === "string") {
+      target = targetData as Target;
+    } else {
+      console.warn("대상자 조회 실패 또는 대상 없음");
+    }
+  } catch (err) {
+    console.warn("대상자 조회 실패:", err);
+  }
+
+  if (!target) {
+    return {
+      target: null,
+      meds: [],
+      meals: [],
+      exercises: [],
+      conditions: [],
+      alerts: [],
+    };
+  }
+
+  // 2) medications
+  let meds: Medication[] = [];
+  try {
+    const medRes = await fetch(`/api/targets/${selectedId}/medications`);
+    const medData = await medRes.json();
+    meds = Array.isArray(medData?.medications) ? medData.medications : [];
+  } catch (err) {
+    console.warn("medications 조회 실패:", err);
+  }
+
+  // 3) meals
+  let meals: Meal[] = [];
+  try {
+    const mealRes = await fetch(`/api/targets/${selectedId}/meals`);
+    const mealData = await mealRes.json();
+    meals = Array.isArray(mealData?.meals) ? mealData.meals : [];
+  } catch (err) {
+    console.warn("meals 조회 실패:", err);
+  }
+
+  // 4) exercises
+  let exercises: Exercise[] = [];
+  try {
+    const exRes = await fetch(`/api/targets/${selectedId}/exercises`);
+    const exData = await exRes.json();
+    exercises = Array.isArray(exData?.exercises) ? exData.exercises : [];
+  } catch (err) {
+    console.warn("exercises 조회 실패:", err);
+  }
+
+  // 5) conditions
+  let conditions: Condition[] = [];
+  try {
+    const condRes = await fetch(`/api/targets/${selectedId}/conditions`);
+    const condData = await condRes.json();
+    conditions = Array.isArray(condData?.conditions) ? condData.conditions : [];
+  } catch (err) {
+    console.warn("conditions 조회 실패:", err);
+  }
+
+  // 6) alerts
+  let alerts: Alert[] = [];
+  try {
+    const alertRes = await fetch(`/api/targets/${selectedId}/alerts`);
+    const alertData = await alertRes.json();
+    alerts = Array.isArray(alertData?.alerts) ? alertData.alerts : [];
+  } catch (err) {
+    console.warn("alerts 조회 실패:", err);
+  }
+
+  return {
+    target,
+    meds,
+    meals,
+    exercises,
+    conditions,
+    alerts,
+  };
+}
+
 // ---------- 컴포넌트 ----------
 export default function CaregiverPage() {
   const [targets, setTargets] = useState<Target[]>([]);
@@ -135,7 +221,7 @@ export default function CaregiverPage() {
   useEffect(() => {
     fetch("/api/targets")
       .then((res) => res.json())
-      .then(setTargets)
+      .then((data) => setTargets(Array.isArray(data) ? data : []))
       .catch(() => setTargets([]));
   }, []);
 
@@ -149,30 +235,22 @@ export default function CaregiverPage() {
       setCheckResult(null);
       return;
     }
-    fetch(`/api/targets/${selected.id}/alerts`)
-      .then((res) => res.json())
-      .then((data) => setAlerts(data?.alerts ?? []))
-      .catch(() => setAlerts([]));
 
-    fetch(`/api/targets/${selected.id}/medications`)
-      .then((res) => res.json())
-      .then((data) => setMeds(data?.medications ?? []))
-      .catch(() => setMeds([]));
-
-    fetch(`/api/targets/${selected.id}/meals`)
-      .then((res) => res.json())
-      .then((data) => setMeals(data?.meals ?? []))
-      .catch(() => setMeals([]));
-
-    fetch(`/api/targets/${selected.id}/exercises`)
-      .then((res) => res.json())
-      .then((data) => setExercises(data?.exercises ?? []))
-      .catch(() => setExercises([]));
-
-    fetch(`/api/targets/${selected.id}/conditions`)
-      .then((res) => res.json())
-      .then((data) => setConditions(data?.conditions ?? []))
-      .catch(() => setConditions([]));
+    fetchDataSequentially(selected.id).then((data) => {
+      if (!data || !data.target) {
+        setMeds([]);
+        setMeals([]);
+        setExercises([]);
+        setConditions([]);
+        setAlerts([]);
+        return;
+      }
+      setMeds(data.meds);
+      setMeals(data.meals);
+      setExercises(data.exercises);
+      setConditions(data.conditions);
+      setAlerts(data.alerts);
+    });
   }, [selected]);
 
   const runCheck = async () => {
