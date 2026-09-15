@@ -1,8 +1,50 @@
+// lib/skill/call.ts
 import { CheckInput, CheckOutput } from "@/lib/types/check";
+import { buildDurReference } from "@/lib/dur/ref";
 
 export async function callDailyCareManager(input: CheckInput): Promise<CheckOutput> {
-  const raw = await callSkill(input);
-  return parseSkillOutput(input, raw);
+  try {
+    const raw = await callSkill(input);
+    const parsed = parseSkillOutput(input, raw);
+
+    const medicationNames = input.medications.map((m) => m.name).filter(Boolean);
+    if (medicationNames.length > 0) {
+      const dur = await buildDurReference(medicationNames);
+      if (dur.hasRef) {
+        parsed.items.push(
+          ...dur.items.map((it) => ({
+            category: it.category as CheckOutput["items"][number]["category"],
+            message: it.message,
+            action: "약사/의료진과 확인해보세요.",
+          }))
+        );
+      } else {
+        parsed.items.push({
+          category: "warning",
+          message: "함께 복용 중인 약들 간 주의 정보는 확인되지 않았어요. 필요하면 약사나 의료진과 확인해보세요.",
+          action: "약사/의료진과 확인해보세요.",
+        });
+      }
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error("callDailyCareManager error:", error);
+    return {
+      targetId: input.targetId,
+      checkedAt: input.checkedAt,
+      summary: "현재 상태를 확인하지 못했습니다.",
+      level: "caution",
+      items: [
+        {
+          category: "condition",
+          message: "AI 응답 확인에 실패했어요. 복약/식사/운동/컨디션을 다시 확인하거나 잠시 후 다시 시도해 주세요.",
+          action: "복약/식사/운동/컨디션을 다시 확인해주세요.",
+        },
+      ],
+      raw: null,
+    };
+  }
 }
 
 async function callSkill(input: CheckInput): Promise<string> {
@@ -76,16 +118,16 @@ function extractContent(data: unknown): string {
   if (!data || typeof data !== "object") return "";
   const obj = data as Record<string, unknown>;
   const choices = obj.choices;
-  if (!Array.isArray(choices) || choices.length === 0) return JSON.stringify(data);
+  if (!Array.isArray(choices) || choices.length === 0) return "";
   const first = choices[0] as Record<string, unknown>;
   const message = first.message;
-  if (!message || typeof message !== "object") return JSON.stringify(data);
+  if (!message || typeof message !== "object") return "";
   const content = (message as Record<string, unknown>).content;
-  return typeof content === "string" ? content : JSON.stringify(data);
+  return typeof content === "string" ? content : "";
 }
 
 function parseSkillOutput(input: CheckInput, raw: string): CheckOutput {
-  const summary = raw ?? "현재 상태를 확인했습니다.";
+  const summary = raw?.trim() || "현재 상태를 확인했습니다.";
   const level = inferLevel(raw);
   const items = extractItems(raw);
 
@@ -151,7 +193,7 @@ function extractItems(raw: string): CheckOutput["items"] {
   if (items.length === 0) {
     items.push({
       category: "condition",
-      message: raw || "현재 상태를 확인했습니다.",
+      message: "현재 상태를 확인했습니다.",
       action: "필요 시 복약/식사/운동/컨디션을 다시 확인해 주세요.",
     });
   }
