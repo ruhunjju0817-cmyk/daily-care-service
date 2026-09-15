@@ -1,8 +1,10 @@
+// app/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
+// ---------- 내부 저장용 타입 (변경 없음) ----------
 type Alert = {
   alertId: string;
   type: "medication" | "meal" | "exercise" | "check";
@@ -61,11 +63,64 @@ type CheckOutput = {
   raw: string | null;
 };
 
+// ---------- 화면 표시용 라벨 헬퍼 (내부 데이터 변경 없음) ----------
+function beforeAfterLabel(value?: string): string {
+  if (!value) return "정보 없음";
+  if (value === "before") return "식전(공복)";
+  if (value === "after") return "식후";
+  if (value === "none") return "상관없음";
+  return value;
+}
+
+function mealStatusLabel(status?: string): string {
+  if (!status) return "정보 없음";
+  if (status === "eaten") return "섭취 완료";
+  if (status === "skipped") return "섭취 안 함";
+  if (status === "partial") return "일부 섭취";
+  if (status === "unknown") return "확인 필요";
+  return status;
+}
+
+function mealTypeLabel(value?: string): string {
+  if (!value) return "정보 없음";
+  if (value === "breakfast") return "아침";
+  if (value === "lunch") return "점심";
+  if (value === "dinner") return "저녁";
+  if (value === "snack") return "간식";
+  return value;
+}
+
+function exerciseStatusLabel(status?: string): string {
+  if (!status) return "정보 없음";
+  if (status === "scheduled") return "예정";
+  if (status === "done") return "실시 완료";
+  if (status === "cancelled") return "취소";
+  if (status === "changed") return "변경됨";
+  return status;
+}
+
+function intensityLabel(value?: string): string {
+  if (!value) return "정보 없음";
+  if (value === "low") return "약함";
+  if (value === "moderate") return "보통";
+  if (value === "high") return "심함";
+  if (value === "unknown") return "확인 필요";
+  return value;
+}
+
+function conditionStateLabel(value?: string): string {
+  if (!value) return "정보 없음";
+  if (value === "unknown") return "확인 필요";
+  return value;
+}
+
+// ---------- 스타일 ----------
 const SECTION_BG = "#f7f8fc";
 const CARD_BORDER = "#e2e5ee";
 const CARD_SHADOW = "0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.04)";
 const BASE_GAP = 16;
 
+// ---------- 컴포넌트 ----------
 export default function Home() {
   const [targets, setTargets] = useState<Target[]>([]);
   const [currentTarget, setCurrentTarget] = useState<Target | null>(null);
@@ -432,7 +487,7 @@ export default function Home() {
                     {" / "}
                     {m.time}
                     {" / "}
-                    {m.beforeAfter}
+                    {beforeAfterLabel(m.beforeAfter)}
                   </li>
                 ))}
                 {meds.length === 0 && (
@@ -449,11 +504,11 @@ export default function Home() {
               <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
                 {meals.map((m) => (
                   <li key={m.mealId ?? m.time} style={{ padding: "7px 0", borderBottom: "1px solid #e6e9f1", fontSize: 14 }}>
+                    {mealTypeLabel(m.mealType)}
+                    {" / "}
                     {m.time}
                     {" / "}
-                    {m.mealType}
-                    {" / "}
-                    {m.status}
+                    상태: {mealStatusLabel(m.status)}
                   </li>
                 ))}
                 {meals.length === 0 && (
@@ -474,9 +529,9 @@ export default function Home() {
                     {" / "}
                     {e.type}
                     {" / "}
-                    {e.intensity}
+                    강도: {intensityLabel(e.intensity)}
                     {" / "}
-                    {e.status}
+                    상태: {exerciseStatusLabel(e.status)}
                   </li>
                 ))}
                 {exercises.length === 0 && (
@@ -495,7 +550,7 @@ export default function Home() {
                   <li key={c.conditionId ?? c.at} style={{ padding: "7px 0", borderBottom: "1px solid #e6e9f1", fontSize: 14 }}>
                     {c.at}
                     {" / "}
-                    {c.state}
+                    상태: {conditionStateLabel(c.state)}
                     {" / "}
                     {c.note ?? "-"}
                   </li>
