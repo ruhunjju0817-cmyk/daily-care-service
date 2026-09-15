@@ -1,8 +1,10 @@
+// app/caregiver/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
+// ---------- 내부 저장용 타입 (변경 없음) ----------
 type Alert = {
   alertId: string;
   type: "medication" | "meal" | "exercise" | "check";
@@ -15,6 +17,37 @@ type Alert = {
 type Target = {
   id: string;
   profile?: { name?: string; note?: string };
+};
+
+type Medication = {
+  medicationId?: string;
+  name: string;
+  time: string;
+  beforeAfter: "before" | "after" | "none";
+  timesPerDay?: number | null;
+  status?: "scheduled" | "taken" | "missed" | "changed";
+};
+
+type Meal = {
+  mealId?: string;
+  time: string;
+  mealType: "breakfast" | "lunch" | "dinner" | "snack";
+  status: "eaten" | "skipped" | "partial" | "unknown";
+};
+
+type Exercise = {
+  exerciseId?: string;
+  time: string;
+  type: string;
+  intensity: "low" | "moderate" | "high" | "unknown";
+  status: "scheduled" | "done" | "cancelled" | "changed";
+};
+
+type Condition = {
+  conditionId?: string;
+  at: string;
+  state: string;
+  note?: string | null;
 };
 
 type CheckOutput = {
@@ -30,17 +63,74 @@ type CheckOutput = {
   raw: string | null;
 };
 
+// ---------- 화면 표시용 라벨 헬퍼 ----------
+function beforeAfterLabel(value?: string): string {
+  if (!value) return "정보 없음";
+  if (value === "before") return "식전(공복)";
+  if (value === "after") return "식후";
+  if (value === "none") return "상관없음";
+  return value;
+}
+
+function mealStatusLabel(status?: string): string {
+  if (!status) return "정보 없음";
+  if (status === "eaten") return "섭취 완료";
+  if (status === "skipped") return "섭취 안 함";
+  if (status === "partial") return "일부 섭취";
+  if (status === "unknown") return "확인 필요";
+  return status;
+}
+
+function mealTypeLabel(value?: string): string {
+  if (!value) return "정보 없음";
+  if (value === "breakfast") return "아침";
+  if (value === "lunch") return "점심";
+  if (value === "dinner") return "저녁";
+  if (value === "snack") return "간식";
+  return value;
+}
+
+function exerciseStatusLabel(status?: string): string {
+  if (!status) return "정보 없음";
+  if (status === "scheduled") return "예정";
+  if (status === "done") return "실시 완료";
+  if (status === "cancelled") return "취소";
+  if (status === "changed") return "변경됨";
+  return status;
+}
+
+function intensityLabel(value?: string): string {
+  if (!value) return "정보 없음";
+  if (value === "low") return "약함";
+  if (value === "moderate") return "보통";
+  if (value === "high") return "심함";
+  if (value === "unknown") return "확인 필요";
+  return value;
+}
+
+function conditionStateLabel(value?: string): string {
+  if (!value) return "정보 없음";
+  if (value === "unknown") return "확인 필요";
+  return value;
+}
+
+// ---------- 스타일 ----------
 const SECTION_BG = "#f7f8fc";
 const CARD_BORDER = "#e2e5ee";
 const CARD_SHADOW = "0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.04)";
 const BASE_GAP = 16;
 
+// ---------- 컴포넌트 ----------
 export default function CaregiverPage() {
   const [targets, setTargets] = useState<Target[]>([]);
   const [selected, setSelected] = useState<Target | null>(null);
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<CheckOutput | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [meds, setMeds] = useState<Medication[]>([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [conditions, setConditions] = useState<Condition[]>([]);
 
   useEffect(() => {
     fetch("/api/targets")
@@ -50,11 +140,39 @@ export default function CaregiverPage() {
   }, []);
 
   useEffect(() => {
-    if (!selected) return;
+    if (!selected) {
+      setMeds([]);
+      setMeals([]);
+      setExercises([]);
+      setConditions([]);
+      setAlerts([]);
+      setCheckResult(null);
+      return;
+    }
     fetch(`/api/targets/${selected.id}/alerts`)
       .then((res) => res.json())
       .then((data) => setAlerts(data?.alerts ?? []))
       .catch(() => setAlerts([]));
+
+    fetch(`/api/targets/${selected.id}/medications`)
+      .then((res) => res.json())
+      .then((data) => setMeds(data?.medications ?? []))
+      .catch(() => setMeds([]));
+
+    fetch(`/api/targets/${selected.id}/meals`)
+      .then((res) => res.json())
+      .then((data) => setMeals(data?.meals ?? []))
+      .catch(() => setMeals([]));
+
+    fetch(`/api/targets/${selected.id}/exercises`)
+      .then((res) => res.json())
+      .then((data) => setExercises(data?.exercises ?? []))
+      .catch(() => setExercises([]));
+
+    fetch(`/api/targets/${selected.id}/conditions`)
+      .then((res) => res.json())
+      .then((data) => setConditions(data?.conditions ?? []))
+      .catch(() => setConditions([]));
   }, [selected]);
 
   const runCheck = async () => {
@@ -121,7 +239,7 @@ export default function CaregiverPage() {
       <header style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 24, fontWeight: 650, margin: "0 0 8px" }}>보호자 뷰</h1>
         <p style={{ fontSize: 15, color: "#5b6478", margin: 0 }}>
-          대상자 상태를 확인하고, 체크 결과를 보는 최소 뷰입니다.
+          대상자 상태를 확인하고, 체크 결과와 기록을 보는 최소 뷰입니다.
         </p>
       </header>
 
@@ -159,6 +277,82 @@ export default function CaregiverPage() {
               <h2 style={{ fontSize: 17, fontWeight: 600, margin: 0, color: "#2f3b4f" }}>
                 대상자: {selected.profile?.name ?? selected.id}
               </h2>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+              <div style={{ background: "#f7f8fc", border: `1px solid ${CARD_BORDER}`, borderRadius: 8, padding: 10 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, margin: "0 0 8px", color: "#2f3b4f" }}>복약</h3>
+                <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
+                  {meds.map((m) => (
+                    <li key={m.medicationId ?? m.name} style={{ padding: "5px 0", borderBottom: "1px solid #e6e9f1", fontSize: 13 }}>
+                      <span style={{ fontWeight: 500 }}>{m.name}</span>
+                      {" / "}
+                      {m.time}
+                      {" / "}
+                      {beforeAfterLabel(m.beforeAfter)}
+                    </li>
+                  ))}
+                  {meds.length === 0 && (
+                    <li style={{ color: "#8a93a3", fontSize: 12 }}>등록된 복약이 없습니다.</li>
+                  )}
+                </ul>
+              </div>
+
+              <div style={{ background: "#f7f8fc", border: `1px solid ${CARD_BORDER}`, borderRadius: 8, padding: 10 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, margin: "0 0 8px", color: "#2f3b4f" }}>식사</h3>
+                <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
+                  {meals.map((m) => (
+                    <li key={m.mealId ?? m.time} style={{ padding: "5px 0", borderBottom: "1px solid #e6e9f1", fontSize: 13 }}>
+                      {mealTypeLabel(m.mealType)}
+                      {" / "}
+                      {m.time}
+                      {" / "}
+                      상태: {mealStatusLabel(m.status)}
+                    </li>
+                  ))}
+                  {meals.length === 0 && (
+                    <li style={{ color: "#8a93a3", fontSize: 12 }}>등록된 식사가 없습니다.</li>
+                  )}
+                </ul>
+              </div>
+
+              <div style={{ background: "#f7f8fc", border: `1px solid ${CARD_BORDER}`, borderRadius: 8, padding: 10 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, margin: "0 0 8px", color: "#2f3b4f" }}>운동</h3>
+                <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
+                  {exercises.map((e) => (
+                    <li key={e.exerciseId ?? e.time} style={{ padding: "5px 0", borderBottom: "1px solid #e6e9f1", fontSize: 13 }}>
+                      {e.time}
+                      {" / "}
+                      {e.type}
+                      {" / "}
+                      강도: {intensityLabel(e.intensity)}
+                      {" / "}
+                      상태: {exerciseStatusLabel(e.status)}
+                    </li>
+                  ))}
+                  {exercises.length === 0 && (
+                    <li style={{ color: "#8a93a3", fontSize: 12 }}>등록된 운동이 없습니다.</li>
+                  )}
+                </ul>
+              </div>
+
+              <div style={{ background: "#f7f8fc", border: `1px solid ${CARD_BORDER}`, borderRadius: 8, padding: 10 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, margin: "0 0 8px", color: "#2f3b4f" }}>컨디션</h3>
+                <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
+                  {conditions.map((c) => (
+                    <li key={c.conditionId ?? c.at} style={{ padding: "5px 0", borderBottom: "1px solid #e6e9f1", fontSize: 13 }}>
+                      {c.at}
+                      {" / "}
+                      상태: {conditionStateLabel(c.state)}
+                      {" / "}
+                      {c.note ?? "-"}
+                    </li>
+                  ))}
+                  {conditions.length === 0 && (
+                    <li style={{ color: "#8a93a3", fontSize: 12 }}>등록된 컨디션이 없습니다.</li>
+                  )}
+                </ul>
+              </div>
             </div>
 
             <button type="button" onClick={runCheck} disabled={checking} style={{ ...buttonStyle, marginTop: 12 }}>
