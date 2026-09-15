@@ -20,7 +20,7 @@ export async function callDailyCareManager(input: CheckInput): Promise<CheckOutp
         );
       } else {
         parsed.items.push({
-          category: "warning",
+          category: "warning" as CheckOutput["items"][number]["category"],
           message: "함께 복용 중인 약들 간 주의 정보는 확인되지 않았어요. 필요하면 약사나 의료진과 확인해보세요.",
           action: "약사/의료진과 확인해보세요.",
         });
